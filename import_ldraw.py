@@ -186,7 +186,8 @@ class LDrawFile(object):
 
         while True:
             # Get the path to the part
-            filename = (filename if os.path.exists(filename) else locate(filename))
+            filename = (filename if os.path.exists(filename)
+                        else locatePart(filename))
 
             # The part does not exist
             # TODO Do not halt on this condition (#11)
@@ -194,8 +195,8 @@ class LDrawFile(object):
                 return False
 
             # Read the located part
-            with open(filename, "rt", encoding="utf_8") as f_in:
-                lines = f_in.readlines()
+            with open(filename, "rt", encoding="utf_8") as f:
+                lines = f.readlines()
 
             # Check the part header for subpart status
             isPart = isTopLevelPart(lines[3])
@@ -688,36 +689,34 @@ def getCyclesMilkyWhite(name, diff_color):
     return mat
 
 
-def isTopLevelPart(partType):
+def isTopLevelPart(headerLine):
     """Check if the given part is a top level part.
 
-    @param {String} partType TODO.
-    @return {Boolean} TODO.
+    @param {String} headerLine The header line stating the part level.
+    @return {Boolean} True if a top level part, False otherwise
+                      or the header does not specify.
     """
-    partType = partType.lower()
-    if not partType.startswith("0 !ldraw_org"):
+    headerLine = headerLine.lower()
+    if not headerLine.startswith("0 !ldraw_org"):
         return False
 
-    partType = partType.lstrip("0 !ldraw_org ")
-    return partType.startswith("part") or partType.startswith("unofficial_part")
+    partType = headerLine.lstrip("0 !ldraw_org ")
+    return (partType.startswith("part") or
+            partType.startswith("unofficial_part"))
 
 
-def locate(pattern):
-    """Check if a part exists."""
-    partName = pattern.replace("\\", "/")
+def locatePart(partName):
+    """Find the given part in the defined search paths.
 
+    @param {String} partName The part to find.
+    @return {!String} The absolute path to the part if found.
+    """
     for path in paths:
-        # Perform a case-sensitive check
         fname = os.path.join(path, partName)
         if os.path.exists(fname):
             return fname
-        else:
-            # Perform a normalized check
-            fname = os.path.join(path, partName.lower())
-            if os.path.exists(fname):
-                return fname
 
-    Console.log("Could not find file {0}".format(fname))
+    Console.log("Could not find part {0}".format(fname))
     return None
 
 
